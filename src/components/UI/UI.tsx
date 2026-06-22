@@ -1154,19 +1154,21 @@ export function UI({ theme, resolvedTheme, customThemes, activeCustomThemeId, th
             <div className="player-panel-title text-[17px] leading-6 font-light tracking-[0.05em] text-white truncate" title={trackName}>
               {trackName}
             </div>
-            <button 
-              onClick={() => {
-                const keys = Object.keys(themes);
-                const themeKeys = [...keys, CUSTOM_THEME_ID];
-                const currentIndex = themeKeys.indexOf(theme);
-                const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % themeKeys.length : 0;
-                onThemeChange(themeKeys[nextIndex]);
-              }}
-              className="player-panel-theme text-white/40 hover:text-white transition-colors"
-              title="Change Theme"
-            >
-              <Palette size={16} />
-            </button>
+            {resolvedTheme.uShowThemeButton && (
+              <button 
+                onClick={() => {
+                  const keys = Object.keys(themes);
+                  const themeKeys = [...keys, CUSTOM_THEME_ID];
+                  const currentIndex = themeKeys.indexOf(theme);
+                  const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % themeKeys.length : 0;
+                  onThemeChange(themeKeys[nextIndex]);
+                }}
+                className="player-panel-theme text-white/40 hover:text-white transition-colors"
+                title="切换主题"
+              >
+                <Palette size={16} />
+              </button>
+            )}
           </div>
           <div className="player-panel-meta text-[11px] leading-4 opacity-50 uppercase mb-3 tracking-wider">
              {isCapturing ? 'System Audio Capture' : 'Local Audio'}
@@ -1411,7 +1413,7 @@ function OptionsPanel({
     Pulse: '脉冲特效',
     Meteor: '流星特效',
     GroundEq: '地面 EQ',
-    Color: '自定义颜色',
+    Color: '自定义主题',
     Cookie: '网易云 Cookie',
   };
 
@@ -1841,7 +1843,7 @@ function CustomColorPanel({
     <div className="grid gap-5">
       <div className="flex items-center justify-between gap-4 border border-white/10 bg-white/[0.03] rounded-sm p-4">
         <div>
-          <div className="text-[12px] uppercase tracking-[0.18em] text-white/70 mb-2">自定义颜色</div>
+          <div className="text-[12px] uppercase tracking-[0.18em] text-white/70 mb-2">自定义主题</div>
           <div className="text-[11px] leading-relaxed text-white/45">
             四个内置主题保持原样。这里可以提前保存多个自定义主题，点击“使用”后才会切换。
           </div>
@@ -1851,6 +1853,42 @@ function CustomColorPanel({
           className="shrink-0 px-3 py-2 rounded-sm border border-white/10 text-[10px] uppercase tracking-[0.15em] text-white/55 hover:text-white transition-colors"
         >
           新建主题
+        </button>
+      </div>
+
+      <div className="rounded-sm border border-white/10 bg-black/20 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[12px] text-white/75">旋转速度</div>
+            <div className="mt-1 text-[10px] text-white/35">控制地面镜头自动旋转，调到 0 就停止自动旋转</div>
+          </div>
+          <div className="text-[12px]" style={{ color: accentHex }}>{activePreset.rotationSpeed.toFixed(2)}</div>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="0.05"
+          value={activePreset.rotationSpeed}
+          onChange={(event) => updateCustomTheme({ rotationSpeed: Number(event.target.value) })}
+          className="mt-3 w-full accent-current h-1"
+          style={{ accentColor: accentHex }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-sm border border-white/10 bg-black/20 px-4 py-3">
+        <div>
+          <div className="text-[12px] text-white/75">显示主题按钮</div>
+          <div className="mt-1 text-[10px] text-white/35">控制播放器右上角的调色盘图标是否显示</div>
+        </div>
+        <button
+          onClick={() => updateCustomTheme({ showThemeButton: !activePreset.showThemeButton })}
+          className={`shrink-0 px-3 py-2 rounded-sm border text-[10px] uppercase tracking-[0.15em] transition-colors ${
+            activePreset.showThemeButton ? 'text-black border-transparent' : 'border-white/10 text-white/45 hover:text-white'
+          }`}
+          style={{ backgroundColor: activePreset.showThemeButton ? accentHex : 'transparent' }}
+        >
+          {activePreset.showThemeButton ? '显示' : '隐藏'}
         </button>
       </div>
 

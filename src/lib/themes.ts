@@ -8,6 +8,8 @@ export interface CustomThemeSettings {
   warm: string;
   accent: string;
   glowIntensity: number;
+  rotationSpeed: number;
+  showThemeButton: boolean;
 }
 
 export interface ThemeColors {
@@ -21,6 +23,8 @@ export interface ThemeColors {
   uWarmEdge: THREE.Color;
   uRippleColor: THREE.Color;
   uGlowIntensity: number;
+  uRotationSpeed: number;
+  uShowThemeButton: boolean;
 }
 
 export interface ThemeRotationSettings {
@@ -45,6 +49,8 @@ export const defaultCustomThemeSettings: CustomThemeSettings = {
   warm: '#f97316',
   accent: '#22d3ee',
   glowIntensity: 1.1,
+  rotationSpeed: 0.5,
+  showThemeButton: true,
 };
 
 export const defaultThemeRotationSettings: ThemeRotationSettings = {
@@ -64,6 +70,12 @@ function clampGlowIntensity(value: unknown) {
   return Math.max(0.4, Math.min(numeric, 2.2));
 }
 
+function clampSceneRotationSpeed(value: unknown) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return defaultCustomThemeSettings.rotationSpeed;
+  return Math.max(0, Math.min(numeric, 2));
+}
+
 function clampRotationInterval(value: unknown) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return defaultThemeRotationSettings.intervalSeconds;
@@ -79,6 +91,8 @@ export function normalizeCustomThemeSettings(value: Partial<CustomThemeSettings>
     warm: normalizeHexColor(value?.warm, defaultCustomThemeSettings.warm),
     accent: normalizeHexColor(value?.accent, defaultCustomThemeSettings.accent),
     glowIntensity: clampGlowIntensity(value?.glowIntensity),
+    rotationSpeed: clampSceneRotationSpeed(value?.rotationSpeed),
+    showThemeButton: value?.showThemeButton === undefined ? defaultCustomThemeSettings.showThemeButton : Boolean(value.showThemeButton),
   };
 }
 
@@ -194,6 +208,8 @@ export function createCustomThemeColors(settings: CustomThemeSettings): ThemeCol
     uWarmEdge: warm.clone().lerp(base, 0.35),
     uRippleColor: new THREE.Color(normalized.accent),
     uGlowIntensity: normalized.glowIntensity,
+    uRotationSpeed: normalized.rotationSpeed,
+    uShowThemeButton: normalized.showThemeButton,
   };
 }
 
@@ -209,6 +225,8 @@ export const themes: Record<string, ThemeColors> = {
     uWarmEdge: new THREE.Color(1.0, 0.6, 0.0),
     uRippleColor: new THREE.Color(0.2, 0.9, 1.0),
     uGlowIntensity: 1.0,
+    uRotationSpeed: 0.5,
+    uShowThemeButton: true,
   },
   'neon-tokyo': {
     name: 'Neon Tokyo',
@@ -221,6 +239,8 @@ export const themes: Record<string, ThemeColors> = {
     uWarmEdge: new THREE.Color(0.1, 0.4, 1.0), // Royal blue
     uRippleColor: new THREE.Color(1.0, 1.0, 1.0),
     uGlowIntensity: 1.5,
+    uRotationSpeed: 0.5,
+    uShowThemeButton: true,
   },
   'cyber-forest': {
     name: 'Cyber Forest',
@@ -233,6 +253,8 @@ export const themes: Record<string, ThemeColors> = {
     uWarmEdge: new THREE.Color(0.9, 0.5, 0.1), // Orange
     uRippleColor: new THREE.Color(0.6, 1.0, 0.3),
     uGlowIntensity: 1.3,
+    uRotationSpeed: 0.5,
+    uShowThemeButton: true,
   },
   'minimal-monochrome': {
     name: 'Minimal Monochrome',
@@ -245,5 +267,7 @@ export const themes: Record<string, ThemeColors> = {
     uWarmEdge: new THREE.Color(0.7, 0.7, 0.7), // Light grey
     uRippleColor: new THREE.Color(1.0, 1.0, 1.0),
     uGlowIntensity: 0.8,
+    uRotationSpeed: 0.5,
+    uShowThemeButton: true,
   }
 };

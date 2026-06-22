@@ -309,7 +309,7 @@ export function MapScene({
       <OrbitControls 
         makeDefault 
         autoRotate 
-        autoRotateSpeed={0.5}
+        autoRotateSpeed={themeColors.uRotationSpeed}
         enablePan={false}
         touches={{
           ONE: THREE.TOUCH.ROTATE,
