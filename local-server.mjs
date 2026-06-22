@@ -12,6 +12,8 @@ const playlistsPath = path.join(dataDir, 'playlists.json');
 const neteaseHeaders = {
   Referer: 'https://music.163.com/',
   'User-Agent': 'Mozilla/5.0',
+  Accept: 'application/json, text/plain, */*',
+  Connection: 'close',
 };
 const neteaseCookieHeader = 'x-netease-cookie';
 
@@ -44,6 +46,22 @@ function createNeteaseHeaders(cookie, extraHeaders = {}) {
   };
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchJsonWithRetry(url, options = {}, retries = 2) {
+  let lastData = null;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const response = await fetch(url, options);
+    const data = await response.json();
+    lastData = data;
+    if (response.ok && data?.code !== 400) return data;
+    if (attempt < retries) await wait(180 * (attempt + 1));
+  }
+  return lastData || {};
+}
+
 
 async function getNeteasePlayableUrl(id, cookie = '') {
   const normalizedCookie = normalizeNeteaseCookie(cookie);
@@ -52,8 +70,7 @@ async function getNeteasePlayableUrl(id, cookie = '') {
   if (cached && cached.expiresAt > Date.now()) return cached.url;
 
   const url = `https://music.163.com/api/song/enhance/player/url?id=${encodeURIComponent(id)}&ids=%5B${encodeURIComponent(id)}%5D&br=320000`;
-  const response = await fetch(url, { headers: createNeteaseHeaders(normalizedCookie) });
-  const data = await response.json();
+  const data = await fetchJsonWithRetry(url, { headers: createNeteaseHeaders(normalizedCookie) });
   const playableUrl = data?.data?.[0]?.url || null;
   playableUrlCache.set(cacheKey, { url: playableUrl, expiresAt: Date.now() + playableUrlCacheTtl });
   return playableUrl;
@@ -69,6 +86,52 @@ function mapNeteaseSong(song) {
     album: album?.name || '',
     duration: song.duration || song.dt || 0,
     fee: song.fee,
+  };
+}
+
+async function fetchNeteaseSearchSongs(keywords, resultLimit, cookie) {
+  const upstreamLimit = Math.min(resultLimit * 5, 80);
+  const body = new URLSearchParams({
+    s: keywords,
+    type: '1',
+    offset: '0',
+    total: 'true',
+    limit: String(upstreamLimit),
+    _: String(Date.now()),
+  });
+
+  const data = await fetchJsonWithRetry('https://music.163.com/api/search/get/web', {
+    method: 'POST',
+    headers: createNeteaseHeaders(cookie, {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    }),
+    body,
+  });
+  const primarySongs = data?.result?.songs || [];
+
+  const fallbackUrl = new URL('https://music.163.com/api/cloudsearch/pc');
+  fallbackUrl.searchParams.set('s', keywords);
+  fallbackUrl.searchParams.set('type', '1');
+  fallbackUrl.searchParams.set('offset', '0');
+  fallbackUrl.searchParams.set('total', 'true');
+  fallbackUrl.searchParams.set('limit', String(upstreamLimit));
+  fallbackUrl.searchParams.set('_', String(Date.now()));
+  const fallbackData = await fetchJsonWithRetry(fallbackUrl, {
+    headers: createNeteaseHeaders(cookie),
+  });
+  const fallbackSongs = fallbackData?.result?.songs || [];
+  const songsById = new Map();
+  for (const song of [...primarySongs, ...fallbackSongs]) {
+    if (song?.id && !songsById.has(song.id)) songsById.set(song.id, song);
+  }
+  return {
+    songs: [...songsById.values()],
+    debug: {
+      primaryCode: data?.code,
+      primaryCount: primarySongs.length,
+      fallbackCode: fallbackData?.code,
+      fallbackCount: fallbackSongs.length,
+    },
   };
 }
 
@@ -226,6 +289,7 @@ app.get('/api/netease/search', async (req, res) => {
     const requestedLimit = Number(req.query.limit || '30');
     const resultLimit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(requestedLimit, 40)) : 30;
     const cookie = readNeteaseCookie(req);
+    const includeDebug = String(req.query.debug || '') === '1';
 
     if (!keywords) {
       res.status(400).json({ error: 'Missing keywords' });
@@ -235,31 +299,19 @@ app.get('/api/netease/search', async (req, res) => {
     const cacheKey = `${keywords.toLowerCase()}::${resultLimit}::${normalizeNeteaseCookie(cookie)}`;
     const cached = searchCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
-      res.json({ songs: cached.songs, cached: true });
+      res.json({ ...cached.payload, cached: true });
       return;
     }
 
-    const body = new URLSearchParams({
-      s: keywords,
-      type: '1',
-      offset: '0',
-      total: 'true',
-      limit: String(Math.min(resultLimit * 5, 120)),
-    });
-
-    const response = await fetch('https://music.163.com/api/search/get/web', {
-      method: 'POST',
-      headers: createNeteaseHeaders(cookie, {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      }),
-      body,
-    });
-    const data = await response.json();
-    const rawSongs = (data?.result?.songs || []).map(mapNeteaseSong);
+    const searchResult = await fetchNeteaseSearchSongs(keywords, resultLimit, cookie);
+    const rawSongs = searchResult.songs.map(mapNeteaseSong);
     const songs = await filterPlayableSongs(rawSongs, resultLimit, cookie);
-    searchCache.set(cacheKey, { songs, expiresAt: Date.now() + searchCacheTtl });
+    const payload = { songs, rawCount: rawSongs.length, filteredCount: songs.length };
+    if (rawSongs.length > 0 || songs.length > 0) {
+      searchCache.set(cacheKey, { payload, expiresAt: Date.now() + searchCacheTtl });
+    }
 
-    res.json({ songs });
+    res.json(includeDebug ? { ...payload, debug: searchResult.debug } : payload);
   } catch (error) {
     res.status(500).json({ error: 'Netease search failed' });
   }

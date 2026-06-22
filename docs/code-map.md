@@ -66,9 +66,14 @@ Settings -> Netease Cookie -> open music.163.com and copy a browser Cookie manua
 -> proxy converts the browser Cookie into an upstream Cookie header
 -> search cache returns if the same keyword/limit was recently checked
 -> music.163.com search API
+-> primary search API and cloudsearch fallback are merged by song id
+-> upstream search and playable-url checks retry transient 400 responses
+-> upstream search limit is capped at 80 because some Netease keywords return code 400 at limit 120
 -> Vite checks each candidate with /api/song/enhance/player/url
 -> playable URL cache avoids repeated candidate checks
 -> unplayable candidates are filtered out
+-> response includes rawCount and filteredCount so the UI can distinguish "no songs found" from "songs found but none playable"
+-> rawCount=0 results are not cached, because anonymous upstream search can occasionally return empty responses
 -> user selects a result
 -> /api/netease/lyric loads LRC
 -> /api/netease/url checks playback availability
@@ -265,7 +270,7 @@ Runtime template file created by the local API. It is ignored by git as user-edi
 3. Modify the proxy endpoints in both `vite.config.ts` and `local-server.mjs`.
 4. Run `npx tsx src/lib/neteaseCookie.test.ts`, `npm run lint`, and `npm run build`.
 5. Restart `npm run dev` because Vite middleware changes require a server restart.
-6. Smoke test `http://127.0.0.1:3000/api/netease/search?keywords=imase&limit=3` without a Cookie; only anonymously playable songs should be returned, and empty results are acceptable for restricted keywords.
+6. Smoke test `http://127.0.0.1:3000/api/netease/search?keywords=tyler&limit=3` without a Cookie; only anonymously playable songs should be returned. If the payload has `rawCount > 0` and `songs: []`, the UI should say songs were found but none are playable anonymously.
 7. Smoke test `PUT http://127.0.0.1:3000/api/netease/cookie`, then repeat the same `/api/netease/search` with a real valid Cookie; account/VIP playable songs may appear, but unplayable songs should still be filtered out. Repeat once to verify the cached path is Cookie-specific.
 8. With a real valid Cookie, smoke test `http://127.0.0.1:3000/api/netease/liked?limit=3`, `http://127.0.0.1:3000/api/netease/playlists`, and `http://127.0.0.1:3000/api/netease/daily-recommend?limit=3`.
 9. In the browser, open Settings -> Netease Cookie, open the official website, copy/save a Cookie, verify the left-side Netease entry appears, open liked/playlists/daily recommendations, and verify each secondary menu lists playable songs.

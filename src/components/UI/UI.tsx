@@ -459,10 +459,14 @@ export function UI({ theme, onThemeChange }: UIProps) {
       if (!response.ok) throw new Error('Search request failed');
 
       const data = await response.json();
-      setSearchResults(data.songs || []);
-      setSearchStatus(data.songs?.length ? '' : (requestCookie
-        ? '当前账号也没有找到可播放歌曲，可能受版权、会员或地区限制。'
-        : '未登录时只显示可播放歌曲，可以保存网易云 Cookie 后搜到更多可播放歌曲。'));
+      const songs = Array.isArray(data.songs) ? data.songs : [];
+      const rawCount = Number(data.rawCount || 0);
+      setSearchResults(songs);
+      setSearchStatus(songs.length ? '' : (rawCount > 0
+        ? (requestCookie
+          ? `搜到 ${rawCount} 首，但当前账号没有可播放版本，可能受版权、会员或地区限制。`
+          : `搜到 ${rawCount} 首，但未登录只能显示可播放歌曲；保存网易云 Cookie 后可能会显示更多。`)
+        : '没有搜到歌曲，请换个关键词试试。'));
     } catch (error) {
       console.warn('Netease search failed:', error);
       setSearchStatus('搜索失败，请稍后再试');
