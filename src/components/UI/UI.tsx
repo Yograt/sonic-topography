@@ -21,6 +21,12 @@ import {
   writeTriggerSettingsStorage,
   type StoredTriggerConfig,
 } from '../../lib/triggerSettings';
+import {
+  createPresetTransferPackage,
+  normalizePresetTransferPackage,
+  writePresetTransferPackage,
+  type PresetTransferPackage,
+} from '../../lib/presetTransfer';
 
 interface UIProps {
   theme: string;
@@ -170,6 +176,7 @@ export function UI({ theme, resolvedTheme, customThemes, activeCustomThemeId, th
   const [isSyncingNeteaseCookie, setIsSyncingNeteaseCookie] = useState(false);
   const [isMobileSideNavOpen, setIsMobileSideNavOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [presetTransferStatus, setPresetTransferStatus] = useState('');
   const hasLoadedPlaylistsRef = useRef(false);
 
   const closeFloatingPanels = () => {
@@ -288,6 +295,43 @@ export function UI({ theme, resolvedTheme, customThemes, activeCustomThemeId, th
     setNeteaseCookie('');
     setIsNeteaseCookieValid(false);
     syncNeteaseCookie('');
+  };
+
+  const syncImportedPlaylists = (nextPlaylists: SavedPlaylist[]) => {
+    fetch('/api/playlists', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playlists: nextPlaylists }),
+    }).catch((error) => {
+      console.warn('Unable to save imported playlists to local server:', error);
+    });
+  };
+
+  const applyPresetTransferPackage = async (presetPackage: PresetTransferPackage) => {
+    const normalized = writePresetTransferPackage(presetPackage);
+    const data = normalized.data;
+
+    applyStoredTriggerConfig(engine.pulseTrigger, data.triggerSettings.Pulse);
+    applyStoredTriggerConfig(engine.meteorTrigger, data.triggerSettings.Meteor);
+    onCustomThemesChange(data.customThemes, data.activeCustomThemeId);
+    onThemeRotationChange(data.themeRotation);
+    onGroundEqSettingsChange(data.groundEqSettings);
+    onThemeChange(data.activeThemeId);
+
+    setPlaylists(data.playlists);
+    setActivePlaylistId(data.playlists[0]?.id || 'favorites');
+    syncImportedPlaylists(data.playlists);
+
+    const importedCookie = data.neteaseCookie || '';
+    setNeteaseCookie(importedCookie);
+    if (importedCookie) {
+      await syncNeteaseCookie(importedCookie);
+    } else {
+      setIsNeteaseCookieValid(false);
+      await syncNeteaseCookie('', { silent: true });
+    }
+
+    setPresetTransferStatus('预设已导入，当前页面已更新');
   };
 
   const ensureNeteaseCookieReady = async () => {
@@ -1346,6 +1390,9 @@ export function UI({ theme, resolvedTheme, customThemes, activeCustomThemeId, th
           activeCustomThemeId={activeCustomThemeId}
           themeRotation={themeRotation}
           groundEqSettings={groundEqSettings}
+          presetTransferStatus={presetTransferStatus}
+          setPresetTransferStatus={setPresetTransferStatus}
+          onImportPresetPackage={applyPresetTransferPackage}
           onThemeChange={onThemeChange}
           onCustomThemesChange={onCustomThemesChange}
           onThemeRotationChange={onThemeRotationChange}
@@ -1425,6 +1472,9 @@ function OptionsPanel({
   activeCustomThemeId,
   themeRotation,
   groundEqSettings,
+  presetTransferStatus,
+  setPresetTransferStatus,
+  onImportPresetPackage,
   onThemeChange,
   onCustomThemesChange,
   onThemeRotationChange,
@@ -1444,12 +1494,17 @@ function OptionsPanel({
   activeCustomThemeId: string;
   themeRotation: ThemeRotationSettings;
   groundEqSettings: StoredGroundEqSettings;
+  presetTransferStatus: string;
+  setPresetTransferStatus: (status: string) => void;
+  onImportPresetPackage: (presetPackage: PresetTransferPackage) => Promise<void>;
   onThemeChange: (theme: string) => void;
   onCustomThemesChange: (settings: CustomThemeSettings[], activeId?: string) => void;
   onThemeRotationChange: (settings: ThemeRotationSettings) => void;
   onGroundEqSettingsChange: (settings: StoredGroundEqSettings) => void;
 }) {
   const [activeTab, setActiveTab] = useState<OptionsTab>('Meteor');
+  const [includeCookieInExport, setIncludeCookieInExport] = useState(false);
+  const importPresetInputRef = useRef<HTMLInputElement>(null);
   const tabs: OptionsTab[] = ['Pulse', 'Meteor', 'GroundEq', 'Color', 'Cookie'];
   const tabLabels: Record<OptionsTab, string> = {
     Pulse: '脉冲特效',
@@ -1457,6 +1512,42 @@ function OptionsPanel({
     GroundEq: '地面 EQ',
     Color: '自定义主题',
     Cookie: '网易云 Cookie',
+  };
+
+  const exportPreset = () => {
+    try {
+      const presetPackage = createPresetTransferPackage({ includeNeteaseCookie: includeCookieInExport });
+      const blob = new Blob([JSON.stringify(presetPackage, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      link.href = url;
+      link.download = `sonic-topography-presets-${stamp}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setPresetTransferStatus(includeCookieInExport ? '预设已导出，包含网易云 Cookie' : '预设已导出，未包含网易云 Cookie');
+    } catch (error) {
+      console.warn('Unable to export presets:', error);
+      setPresetTransferStatus('导出失败，请稍后重试');
+    }
+  };
+
+  const importPresetFile = async (file: File | undefined) => {
+    if (!file) return;
+
+    try {
+      setPresetTransferStatus('正在导入预设...');
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      await onImportPresetPackage(normalizePresetTransferPackage(parsed));
+    } catch (error) {
+      console.warn('Unable to import presets:', error);
+      setPresetTransferStatus(error instanceof Error ? error.message : '导入失败，请选择正确的预设文件');
+    } finally {
+      if (importPresetInputRef.current) importPresetInputRef.current.value = '';
+    }
   };
 
   return (
@@ -1474,6 +1565,50 @@ function OptionsPanel({
                <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/35">视觉触发器、颜色与网易云 Cookie</div>
              </div>
              <button onClick={onClose} className="text-white/50 hover:text-white uppercase tracking-widest text-[10px]">关闭</button>
+          </div>
+
+          <div className="mb-6 rounded-sm border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-[12px] uppercase tracking-[0.18em] text-white/70">预设迁移</div>
+                <div className="mt-2 text-[11px] leading-relaxed text-white/45">一键导出或导入歌单、特效、地面 EQ、自定义主题和浏览器设置。</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 rounded-sm border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/50">
+                  <input
+                    type="checkbox"
+                    checked={includeCookieInExport}
+                    onChange={(event) => setIncludeCookieInExport(event.target.checked)}
+                    className="h-3.5 w-3.5"
+                    style={{ accentColor: accentHex }}
+                  />
+                  包含 Cookie
+                </label>
+                <button
+                  type="button"
+                  onClick={exportPreset}
+                  className="px-3 py-2 rounded-sm text-[10px] uppercase tracking-[0.15em] text-black"
+                  style={{ backgroundColor: accentHex }}
+                >
+                  导出预设
+                </button>
+                <button
+                  type="button"
+                  onClick={() => importPresetInputRef.current?.click()}
+                  className="px-3 py-2 rounded-sm border border-white/10 text-[10px] uppercase tracking-[0.15em] text-white/55 hover:text-white transition-colors"
+                >
+                  导入预设
+                </button>
+                <input
+                  ref={importPresetInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={(event) => importPresetFile(event.target.files?.[0])}
+                />
+              </div>
+            </div>
+            {presetTransferStatus && <div className="mt-3 text-[11px] text-white/45">{presetTransferStatus}</div>}
           </div>
 
           <div className="flex gap-2 mb-6">

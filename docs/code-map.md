@@ -15,6 +15,7 @@ Last full verification commit: `unknown`
 | Change one-click packaged startup | `local-server.mjs`; `start-sonic-topography.bat`; `package.json` | No automated tests yet | `npm run build`; `npm start`; `http://127.0.0.1:4173` smoke test |
 | Package Wallpaper Engine web wallpaper | `package.json`; `scripts/prepare-wallpaper.mjs`; `src/lib/AudioEngine.ts`; `src/components/UI/UI.tsx` | No automated tests yet | `npm run lint`; `npm run build:wallpaper`; import `dist-wallpaper/index.html` in Wallpaper Engine |
 | Change saved playlists | `src/components/UI/UI.tsx`; `local-server.mjs`; `vite.config.ts` | No automated tests yet | `npm run lint`; playlist API persistence QA |
+| Change preset import/export | `src/lib/presetTransfer.ts`; `src/components/UI/UI.tsx`; `docs/code-map.md` | `src/lib/presetTransfer.test.ts` | `npx tsx src/lib/presetTransfer.test.ts`; `npm run lint`; `npm run build`; browser Settings -> import/export QA |
 | Change playback queue or skip mode | `src/components/UI/UI.tsx` | No automated tests yet | `npm run lint`; browser playlist skip/shuffle QA |
 | Change audio playback, analysis, or triggers | `src/lib/AudioEngine.ts` | No automated tests yet | `npm run lint`; browser playback QA |
 | Change trigger settings persistence or meteor trigger spacing | `src/lib/AudioEngine.ts`; `src/lib/triggerSettings.ts`; `src/components/AudioVisualizer/MapScene.tsx`; `src/components/UI/UI.tsx` | `src/lib/triggerSettings.test.ts` | `npx tsx src/lib/triggerSettings.test.ts`; `npm run lint`; `npm run build`; browser Settings panel QA |
@@ -171,6 +172,18 @@ src/lib/themes.ts defines the four built-in themes and keeps their exact color v
 -> MapScene lerps shader uniforms and meteor color toward resolvedTheme
 ```
 
+Preset import/export flow:
+
+```text
+Settings -> Preset Migration
+-> Export creates a versioned JSON file through src/lib/presetTransfer.ts
+-> export includes browser playlists, trigger settings, Ground EQ, custom themes, active theme ids, and theme rotation
+-> Netease Cookie is excluded by default and included only when the user checks "Include Cookie"
+-> Import reads a JSON file, validates app/version, normalizes all known sections, and overwrites matching browser localStorage keys
+-> UI applies imported trigger settings to AudioEngine, updates React theme/EQ/playlist/Cookie state, syncs playlists to /api/playlists, and re-syncs imported Cookie through /api/netease/cookie
+-> imported data intentionally does not include uploaded audio files, real music files, current playback progress, or play queue
+```
+
 Wallpaper Engine flow:
 
 ```text
@@ -291,6 +304,7 @@ Runtime template file created by the local API. It is ignored by git as user-edi
 | --- | --- |
 | `src/lib/neteaseCookie.test.ts` | Cookie normalization and `X-Netease-Cookie` header creation |
 | `src/lib/triggerSettings.test.ts` | Trigger setting normalization and bounds |
+| `src/lib/presetTransfer.test.ts` | Preset package validation, Cookie opt-in export, playlist/theme/EQ/trigger normalization |
 
 ## Common Change Recipes
 
@@ -422,6 +436,7 @@ rg -n "TemplateCityScene|AdminPage|saveTemplateLibrary|sonic-city/templates" son
 - Cloud song plus buttons add songs to the local `Favorites` playlist, not to the upstream Netease account.
 - Pulse/Meteor trigger settings are browser-local via `sonic-topography-trigger-settings-v1`. They should persist across refreshes for the same browser but should not be written into packaged project files or shared with other users.
 - Saved playlists are file-backed in `data/playlists.json`; `data/` is ignored by git because it is user runtime data. Browser `localStorage` is kept as a fallback/migration source.
+- Preset import overwrites matching browser settings and syncs playlists to the local server. Export excludes Netease Cookie unless the user explicitly opts in; exported Cookie files should be treated as sensitive login data.
 - If the terrain snaps flat when stopping or switching audio, inspect `AudioEngine.beginVisualRelease()` and the non-playing branch in `getAudioData()` before changing shader code.
 - Sonic City template data is also runtime data. `sonic-city/data/templates.json` may contain local edits from `/admin`; do not overwrite it unless the requested change is specifically about the current local template.
 - Sonic City loads server templates before browser `localStorage`, so a successful API save will replace stale browser template data on refresh.
