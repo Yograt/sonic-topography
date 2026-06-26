@@ -246,5 +246,5 @@ npm run build:go-exe
 - 本项目仅供学习、研究和个人非商业体验使用，不授权任何商业用途。
 - 网易云接口是网页接口，播放结果可能受版权、会员、地区、账号状态影响。
 - 搜索列表只显示当前匿名状态或当前 Cookie 权限下可播放的歌曲。
-- Cookie 是敏感登录信息，不要把自己的 Cookie 发给别人。
+- 请注意 ！ Cookie 是敏感登录信息，不要把自己的 Cookie 发给别人。
 - 不要提交 `dist/`、`dist-mac/`、`dist-wallpaper/`、`SonicTopography.exe` 或本地 `data/`。
