@@ -2,148 +2,132 @@
 
 [中文](./README.md) | English
 
-Sonic Topography is a local music visualizer built with React, Three.js, Vite, Web Audio, and a local proxy server. It turns music frequency bands into a glowing 3D terrain with waves, ripples, meteors, lyrics, and themeable visual effects.
+Sonic Topography is a desktop music player and 3D music visualizer. It turns low, mid, and high frequency energy into a glowing, moving terrain so music feels like a living sound map.
 
 > Usage restriction: this project is provided only for learning, research, and personal non-commercial use. Without explicit permission from the author, it may not be used for commercial projects, commercial performances, commercial displays, paid services, resale, or any profit-making purpose.
 
-![Sonic Topography main visualizer](./public/screenshots/main-visualizer.png)
+![Sonic Topography desktop visualizer](./public/screenshots/desktop-visualizer.png)
 
-## Features
+## Highlights
 
-- Audio-reactive 3D terrain with ripples, glow, and meteor effects.
-- Local audio playback with optional `.lrc` lyrics.
-- Built-in demo track.
-- System audio capture for driving the visualizer with any audio playing on the computer.
-- Netease Cloud Music search with playable-result filtering.
-- Netease liked songs, playlists, and daily recommendations after saving a valid Cookie.
-- Local playlists with persistence.
-- Custom themes, theme rotation, visual Ground EQ, Pulse triggers, and Meteor triggers.
-- Preset import/export for moving settings across devices.
-- Windows single-EXE build. End users do not need Node.js or Go to run the generated EXE.
+- Desktop app: built with Electron, so it runs as its own window instead of a browser tab.
+- 3D music terrain: frequency bands drive terrain columns, glow, ripples, meteors, and lyrics.
+- Local playback: upload local audio files and optional `.lrc` lyric files.
+- Built-in demo: open the app and preview the visualizer without preparing music first.
+- Netease Cloud Music: open the official login window in the desktop app, scan the QR code, and use the local Cookie for search, playlists, daily recommendations, and playback.
+- QQ Music: open the official login window in the desktop app, scan the QR code, and use the QQ Music Cookie for search, playback, and lyrics.
+- Local playlists: save favorite tracks into local playlists.
+- More human-friendly Ground EQ: use 8 frequency faders to control how different sounds shape the terrain.
+- Time display and Pomodoro: turn the visualizer into a focus-friendly desktop clock and timer.
+- Preset transfer: import and export playlists, effects, Ground EQ, custom themes, and browser settings.
 
-## Interface Guide
+## Quick Start
 
-### AJIN.
+If you only want to use the app:
 
-Click `AJIN.` in the top-left corner to open the side rail. On the first visit, the app shows a subtle hint:
+1. Download and install the Windows installer.
+2. Open `Sonic Topography`.
+3. Click `AJIN.` in the top-left corner to open the side rail.
+4. Click `Demo` first to check that visuals and audio are working.
+5. Click `Upload` to play your own local audio file.
+6. To use Netease or QQ Music, open `Settings -> Account`, then follow the official QR login flow.
 
-```text
-Click AJIN. in the top-left corner to open the side rail
-or move the mouse to the left edge
-```
+## Interface
 
-After the side rail has been opened once, the hint is hidden for that browser.
+Click `AJIN.` in the top-left corner to open the side rail.
 
-### Side Rail
-
-The side rail contains the main actions:
-
-- `Visual`: close panels and return to the visualizer.
-- `Settings`: open visual and account settings.
-- `Search`: search music.
-- `Netease`: appears after a valid Cookie is saved; opens liked songs, playlists, and daily recommendations.
-- `Playlist`: open local saved playlists.
+- `Visual`: close panels and return to the 3D music terrain.
+- `Settings`: open visualizer, Ground EQ, theme, account login, and display settings.
+- `Search`: search Netease Cloud Music and QQ Music.
+- `Netease`: appears after a valid Netease Cookie is saved; opens liked songs, playlists, and daily recommendations.
+- `Playlist`: open local playlists.
 - `Demo`: play the built-in demo.
-- `Upload`: choose local audio and `.lrc` files.
-- `Capture`: capture system audio.
-- `Fullscreen`: enter or exit browser fullscreen.
+- `Upload`: choose local audio or `.lrc` lyric files.
+- `Fullscreen`: enter or exit fullscreen.
 
-### Player Card
+## Ground EQ
 
-The player card in the top-right shows the current track, source, theme, progress, playback controls, volume, and duration. It can be hidden from the Custom Theme settings.
+Ground EQ controls how different parts of the music affect the 3D terrain. It is not a traditional audio equalizer that only changes the sound; it is a visual effects mixer for the ground.
 
-### Lyrics
+![Human-friendly custom Ground EQ](./public/screenshots/ground-eq.png)
 
-When LRC lyrics are available, they are displayed on the left side. The current line is highlighted. Lyrics are hidden during system audio capture because capture mode has no known track lyrics.
+Each fader has a visual personality:
 
-### Frequency Stats
+- `SUB BASS / Center Lift`: lets deep bass push the center of the terrain.
+- `BASS / Weight`: controls the heavy body of the low end.
+- `LOW MID / Slow Flow`: creates slower terrain waves.
+- `MID / Direction Flow`: adds directional movement from mid frequencies.
+- `HIGH MID / Peaks`: makes rhythmic highlights rise into sharper peaks.
+- `PRESENCE / Flash Trigger`: controls local flashes and bright accents.
+- `BRILLIANCE / Edge Shimmer`: adds small, light edge sparkles.
+- `AIR / Air Particles`: controls the lightest high-frequency particles.
 
-The bottom-left stats show the current Bass, Mid, Treble, and Energy values so you can see which audio bands are driving the visualizer.
+The `Motion Speed` slider controls how quickly the ground rises and falls. Higher values feel more responsive; lower values feel smoother and calmer.
 
-## Settings Guide
+## Time Display And Pomodoro
 
-Open the side rail by clicking `AJIN.`, then click `Settings`.
+Sonic Topography can also work as a focus desktop background. When time display is enabled, a large clock appears over the 3D terrain. With Pomodoro mode, it can support work, study, reading, or breaks.
 
-### Preset Migration
+![Time display and Pomodoro](./public/screenshots/focus-clock.png)
 
-The top area of Settings contains import/export controls:
+Suggested use:
 
-- `Export Preset`: downloads a JSON file containing themes, Ground EQ, triggers, local playlists, and related settings.
-- `Import Preset`: imports a JSON preset and applies it to the current browser.
-- `Include Netease Cookie`: off by default. The Cookie is exported only if you explicitly enable it.
+1. Play focus music or ambient sound.
+2. Enable the time display.
+3. Start a Pomodoro session at your own pace.
+4. Enter fullscreen and let it become a lightweight focus desktop.
 
-Treat exported Cookies as sensitive login data.
+## Account Login
 
-### Pulse Effect
+Open `Settings -> Account`, then choose `Netease` or `QQ Music`.
 
-Controls pulse waves triggered by clicks or audio. You can tune the trigger band, threshold, intensity, and cooldown.
+In the Electron desktop app, click `Open Official QR Login` to open the official login page. After QR login succeeds, Sonic Topography reads the Cookie from that login window and syncs it to the local proxy service.
 
-### Meteor Effect
+In a normal browser dev page, QR login is unavailable. Manual Cookie inputs remain only as a fallback debug path.
 
-Controls meteor-like visual effects. You can tune the trigger band, intensity, amount, spacing, and cooldown.
+Cookies are sensitive login credentials and are stored only on your machine. Do not export, upload, or share them.
 
-### Ground EQ
+## Preset Import And Export
 
-This is a visual EQ. It does not change the audio. It only changes how the terrain reacts:
+Settings can import or export presets. Presets are useful when moving your visual setup between machines.
 
-- Left side: low frequencies, center lift, kick and bass impact.
-- Middle: flowing terrain waves and broad motion.
-- Right side: spikes, sparkles, edge shimmer, and tiny high-frequency details.
+Preset files can include:
 
-While music is playing, the EQ canvas shows a live spectrum guide behind the editable curve.
+- Playlists
+- Pulse effects
+- Meteor effects
+- Ground EQ
+- Custom themes
+- Browser settings
 
-### Custom Theme
+Export can optionally include Cookies. In most cases, do not include Cookies unless you understand the risk and are only moving data between your own devices.
 
-You can save multiple custom themes. Each theme includes:
+## Local Data
 
-- Background color.
-- Cool color.
-- Warm color.
-- Accent color.
-- Glow intensity.
-- Auto-rotation speed.
-- Player card visibility.
+- Themes, effects, Ground EQ, account Cookies, and most settings are stored locally on your machine.
+- During source development, local playlists are saved through `/api/playlists` into `data/playlists.json`.
+- In packaged Electron, local server data is stored under Electron's user data directory.
+- Uploaded audio files are not exported in preset files and are not bundled into the installer.
 
-Custom themes can be saved and deleted. The top-right theme button still cycles through built-in themes; to use a custom theme, select it in Settings.
+## Development
 
-### Netease Cookie
-
-This section stores a manually copied Netease Cookie. After saving a valid Cookie, the `Netease` entry appears in the side rail.
-
-The Cookie is stored in the current browser localStorage and synced to the local proxy memory at runtime. It is not written into the project config.
-
-## Netease Cookie Tutorial
-
-This app does not read your Netease password and cannot automatically read official-site Cookies. Each user must manually copy their own browser Cookie.
-
-Recommended desktop steps:
-
-1. Open Settings, then open `Netease Cookie`.
-2. Click `Open Official Site` and log in at `music.163.com`.
-3. Press `F12`. If it does not work, try `Fn + F12` or `Ctrl + Shift + I`.
-4. Open the `Network` tab.
-5. Refresh the Netease page, or play/search a song.
-6. Search for `weapi`. If nothing appears, search for `music.163.com`.
-7. Click a request.
-8. Open `Headers`.
-9. Find `Cookie` under `Request Headers`.
-10. Copy the complete Cookie value.
-11. Paste it into Sonic Topography and save.
-
-After saving a valid Cookie:
-
-- Search uses your account permission to filter playable songs.
-- The side rail shows `Netease`.
-- You can open liked songs, playlists, and daily recommendations.
-
-If the Cookie is invalid, it is usually incomplete, expired, logged out, or temporarily rejected by Netease.
-
-## Run From Source
-
-Install Node.js first.
+Install dependencies:
 
 ```powershell
 npm install
+```
+
+Use Electron mode for day-to-day development:
+
+```powershell
+npm run dev:electron
+```
+
+This starts the Vite dev server and opens an Electron window. Edits under `src/`, CSS, React components, and Settings UI usually hot-update.
+
+Browser-only UI development is also available:
+
+```powershell
 npm run dev
 ```
 
@@ -153,92 +137,56 @@ Open:
 http://127.0.0.1:3000
 ```
 
-## Local Production Server
+Restart Electron after changing:
+
+- `desktop/main.js`
+- `desktop/preload.cjs`
+- Electron packaging config, window behavior, or IPC login bridges
+- Local server and proxy code
+
+## Packaging
+
+Before release:
 
 ```powershell
-npm run build
-npm start
+npm run build:electron
 ```
 
-Open:
+The Windows installer is written to:
 
 ```text
-http://127.0.0.1:4173
+release/
 ```
 
-## Windows One-Click Script
-
-After downloading or cloning the repository, double-click:
-
-```text
-start-sonic-topography.bat
-```
-
-This script installs dependencies if needed, builds `dist/`, starts the local production server, and opens `http://127.0.0.1:4173`. This mode requires Node.js on the computer.
-
-## Windows Single EXE Build
-
-Developers need Node.js and Go to build the EXE. End users do not need Node.js or Go to run the generated EXE.
+For a packaged directory without creating an installer:
 
 ```powershell
-npm install
-npm run build:go-exe
+npm run build:electron:dir
 ```
-
-Output:
-
-```text
-SonicTopography.exe
-```
-
-Double-clicking the EXE starts the local server and opens the default browser.
-
-The EXE always uses `http://127.0.0.1:4173`. If Sonic Topography is already running on that port, it opens the existing page. If another program is using the port, close that program first.
-
-## macOS Build
-
-You can cross-compile macOS binaries from Windows:
-
-```powershell
-$env:CGO_ENABLED='0'
-$env:GOOS='darwin'
-$env:GOARCH='arm64'
-go build -o dist-mac/SonicTopography-macos-arm64 ./cmd/sonic-topography
-$env:GOARCH='amd64'
-go build -o dist-mac/SonicTopography-macos-amd64 ./cmd/sonic-topography
-```
-
-Use `arm64` for Apple Silicon Macs and `amd64` for Intel Macs. These binaries are not Apple-signed or notarized, so macOS may require right-click Open or manual approval in Privacy & Security.
-
-## Wallpaper Engine
-
-```powershell
-npm run build:wallpaper
-```
-
-The generated `dist-wallpaper/` folder can be imported as a Wallpaper Engine web wallpaper.
-
-## Local Data
-
-- Themes, triggers, Ground EQ, Netease Cookie, and most settings are stored in browser `localStorage`.
-- When running from source, local playlists are saved through `/api/playlists` into `data/playlists.json`, with browser localStorage as a fallback.
-- When running the Go EXE, playlists are stored in the user's config directory, for example `%APPDATA%/SonicTopography/playlists.json` on Windows.
-- Real uploaded audio files are not exported in preset files and are not bundled into the EXE.
 
 ## Useful Commands
 
 ```powershell
+npm run dev:electron
 npm run lint
 npm run build
-npm start
-go test ./...
-npm run build:go-exe
+npm run build:electron:dir
+npm run build:electron
 ```
 
 ## Notes
 
-- This project is for learning, research, and personal non-commercial use only. Commercial use is not permitted.
-- Netease playback uses web endpoints and may be affected by copyright, membership, region, or account state.
-- Search results show only songs playable under the current anonymous state or current Cookie permissions.
-- Please attention ! Cookies are sensitive login credentials. Do not share your own Cookie.
-- Do not commit `dist/`, `dist-mac/`, `dist-wallpaper/`, `SonicTopography.exe`, or local `data/`.
+- Netease and QQ Music playback may be affected by copyright, membership, region, or account state.
+- Search results only show content available under the current anonymous state or current Cookie permissions.
+- Do not commit `dist/`, `release/`, local `data/`, update downloads, or account Cookies.
+- If a song appears in search but cannot play, check account state, song copyright, and whether the selected quality is available.
+
+## Buy The Author A Coffee
+
+If you enjoy Sonic Topography, or if it happens to keep you company during work, study, or creative time, you can buy the author a coffee.
+
+All support will be used to buy tokens and related services so the app can keep improving, fixing bugs, adding features, and becoming nicer to use.
+
+![Buy the author a coffee](./public/screenshots/coffee-qr.png)
+
+Thank you for every bit of support. This project will keep growing.
